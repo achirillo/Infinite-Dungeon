@@ -8,4 +8,5 @@ Respond with valid JSON in this exact format:
   ]
 }
 
+Include at least 2 options, up to 5.
 Do not include any text outside the JSON object.
