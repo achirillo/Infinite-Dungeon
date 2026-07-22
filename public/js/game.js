@@ -1,4 +1,6 @@
 const sceneHistory = document.getElementById('sceneHistory');
+const historySidebar = document.getElementById('historySidebar');
+const historyToggle = document.getElementById('historyToggle');
 const currentScene = document.getElementById('currentScene');
 const optionsList = document.getElementById('optionsList');
 const loadingIndicator = document.getElementById('loadingIndicator');
@@ -109,6 +111,13 @@ async function loadRootScene() {
     showError(err.message);
   }
 }
+
+historyToggle.addEventListener('click', () => {
+  historySidebar.classList.toggle('collapsed');
+  historyToggle.textContent = historySidebar.classList.contains('collapsed')
+    ? '\u00AB History'
+    : '\u00BB';
+});
 
 applyStoredFontSize();
 loadRootScene();
