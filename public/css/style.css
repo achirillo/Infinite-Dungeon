@@ -294,6 +294,17 @@ a:hover {
   cursor: not-allowed;
 }
 
+.option-btn.ungenerated {
+  color: #3388cc;
+  border-color: #1a4477;
+}
+
+.option-btn.ungenerated:hover {
+  color: #55aadd;
+  border-color: #3388cc;
+  background: #0d1a2a;
+}
+
 .loading-indicator {
   margin-top: 12px;
   color: var(--accent);

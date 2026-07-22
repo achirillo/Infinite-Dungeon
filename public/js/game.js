@@ -60,7 +60,7 @@ function renderOptions(options) {
   optionsList.innerHTML = '';
   options.forEach(opt => {
     const btn = document.createElement('button');
-    btn.className = 'option-btn';
+    btn.className = 'option-btn' + (opt.target_scene_id === null ? ' ungenerated' : '');
     btn.textContent = `> ${opt.option_text}`;
     btn.addEventListener('click', () => chooseOption(opt));
     optionsList.appendChild(btn);

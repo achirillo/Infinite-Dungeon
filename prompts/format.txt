@@ -1,4 +1,11 @@
 Respond with valid JSON in this exact format:
-{"scene": "The narrative text for this scene...", "options": ["Option 1", "Option 2", "Option 3"]}
+{
+  "scene": "The narrative text for this scene...",
+  "options": [
+    {"text": "Option 1", "plan": "What Option 1 will lead to"},
+    {"text": "Option 2", "plan": "What Option 2 will lead to"},
+    ...
+  ]
+}
 
 Do not include any text outside the JSON object.

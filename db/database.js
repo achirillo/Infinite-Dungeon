@@ -12,6 +12,13 @@ function saveToFile() {
   fs.writeFileSync(DB_PATH, buffer);
 }
 
+function columnExists(table, column) {
+  const result = db.exec(`PRAGMA table_info(${table})`);
+  if (result.length === 0) return false;
+  const columns = result[0].values.map(row => row[1]);
+  return columns.includes(column);
+}
+
 async function initDatabase() {
   const SQL = await initSqlJs();
 
@@ -50,6 +57,10 @@ async function initDatabase() {
     )
   `);
 
+  if (!columnExists('options', 'plan')) {
+    db.run('ALTER TABLE options ADD COLUMN plan TEXT');
+  }
+
   const rootResult = db.exec('SELECT id FROM scenes WHERE parent_id IS NULL');
   if (rootResult.length === 0 || rootResult[0].values.length === 0) {
     db.run(
@@ -60,9 +71,12 @@ async function initDatabase() {
     const rootRes = db.exec('SELECT id FROM scenes WHERE parent_id IS NULL');
     const rootId = rootRes[0].values[0][0];
 
-    db.run('INSERT INTO options (scene_id, option_text, sort_order) VALUES (?, ?, ?)', [rootId, 'Examine the crack in the wall', 0]);
-    db.run('INSERT INTO options (scene_id, option_text, sort_order) VALUES (?, ?, ?)', [rootId, 'Feel around the room in the dark', 1]);
-    db.run('INSERT INTO options (scene_id, option_text, sort_order) VALUES (?, ?, ?)', [rootId, 'Call out into the darkness', 2]);
+    db.run('INSERT INTO options (scene_id, option_text, plan, sort_order) VALUES (?, ?, ?, ?)',
+      [rootId, 'Examine the crack in the wall', 'The crack leads into a narrow passageway with an eerie glow beyond.', 0]);
+    db.run('INSERT INTO options (scene_id, option_text, plan, sort_order) VALUES (?, ?, ?, ?)',
+      [rootId, 'Feel around the room in the dark', 'Hidden objects in the room reveal hints about where the player is imprisoned.', 1]);
+    db.run('INSERT INTO options (scene_id, option_text, plan, sort_order) VALUES (?, ?, ?, ?)',
+      [rootId, 'Call out into the darkness', 'A distant voice or creature responds, revealing a potential ally or threat.', 2]);
   }
 
   saveToFile();
@@ -115,11 +129,12 @@ function insertScene(parentId, optionChosen, content, depth) {
   return newId;
 }
 
-function insertOptions(sceneId, optionTexts) {
-  for (let i = 0; i < optionTexts.length; i++) {
+function insertOptions(sceneId, optionsData) {
+  for (let i = 0; i < optionsData.length; i++) {
+    const opt = optionsData[i];
     db.run(
-      'INSERT INTO options (scene_id, option_text, sort_order) VALUES (?, ?, ?)',
-      [sceneId, optionTexts[i], i]
+      'INSERT INTO options (scene_id, option_text, plan, sort_order) VALUES (?, ?, ?, ?)',
+      [sceneId, opt.text, opt.plan || null, i]
     );
   }
   saveToFile();

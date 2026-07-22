@@ -30,13 +30,14 @@ function loadPrompt(filename) {
   return fs.readFileSync(path.join(__dirname, '..', 'prompts', filename), 'utf-8');
 }
 
-async function generateScene(contextHistory) {
+async function generateScene(historySteps, chosenPlan) {
   const systemPrompt = loadPrompt('generation.txt');
+  const formatPrompt = loadPrompt('format.txt');
 
   let userContent = 'The following is the history of this adventure so far. ';
-  userContent += 'Generate the next scene and three options for the player.\n\n';
+  userContent += 'Generate the next scene and options for the player.\n\n';
 
-  for (const step of contextHistory) {
+  for (const step of historySteps) {
     if (step.option) {
       userContent += `Player chose: "${step.option}"\n`;
     }
@@ -45,8 +46,11 @@ async function generateScene(contextHistory) {
     }
   }
 
-  userContent += 'Respond with valid JSON in this exact format:\n';
-  userContent += '{"scene": "The narrative text for this scene...", "options": ["Option 1", "Option 2", "Option 3"]}';
+  if (chosenPlan) {
+    userContent += `\nPlan for the most recent choice: "${chosenPlan}"\nFollow this plan when writing the outcome.\n\n`;
+  }
+
+  userContent += formatPrompt;
 
   const response = await getClient().chat.completions.create({
     model: MODEL,
@@ -88,23 +92,42 @@ function parseSceneResponse(rawResponse) {
   if (!parsed.scene || typeof parsed.scene !== 'string' || parsed.scene.trim().length === 0) {
     throw new Error('Missing or empty scene text');
   }
-  if (!Array.isArray(parsed.options) || parsed.options.length < 2) {
+
+  let rawOptions = parsed.options;
+  if (!Array.isArray(rawOptions) || rawOptions.length < 2) {
     throw new Error('Options must be an array with at least 2 entries');
+  }
+
+  const options = rawOptions.map(opt => {
+    if (typeof opt === 'string') {
+      return { text: opt.trim(), plan: null };
+    }
+    return {
+      text: (opt.text || '').trim(),
+      plan: (opt.plan || null),
+    };
+  }).filter(o => o.text.length > 0);
+
+  if (options.length < 2) {
+    throw new Error('Not enough valid options after parsing');
   }
 
   return {
     scene: parsed.scene.trim(),
-    options: parsed.options.map(o => o.trim()).filter(o => o.length > 0),
+    options,
   };
 }
 
-async function generateAndValidateScene(contextHistory) {
+async function generateAndValidateScene(historySteps, chosenPlan) {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const rawResponse = await generateScene(contextHistory);
+      const rawResponse = await generateScene(historySteps, chosenPlan);
 
       const parsed = parseSceneResponse(rawResponse);
-      const fullOutput = `Scene: ${parsed.scene}\nOptions:\n${parsed.options.map((o, i) => `${i + 1}. ${o}`).join('\n')}`;
+      const fullOutput = [
+        `Scene: ${parsed.scene}`,
+        ...parsed.options.map((o, i) => `${i + 1}. ${o.text}    [Plan: ${o.plan}]`),
+      ].join('\n');
 
       const isValid = await validateScene(fullOutput);
       if (isValid) {

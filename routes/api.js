@@ -3,13 +3,17 @@ const router = express.Router();
 const db = require('../db/database');
 const { generateAndValidateScene } = require('../services/llm');
 
+function stripPlans(options) {
+  return options.map(({ plan, ...rest }) => rest);
+}
+
 router.get('/scenes/root', (_req, res) => {
   try {
     const scene = db.getRootScene();
     if (!scene) {
       return res.status(404).json({ error: 'Root scene not found' });
     }
-    const options = db.getOptions(scene.id);
+    const options = stripPlans(db.getOptions(scene.id));
     res.json({ scene, options });
   } catch (err) {
     console.error(err);
@@ -23,7 +27,7 @@ router.get('/scenes/:id', (req, res) => {
     if (!scene) {
       return res.status(404).json({ error: 'Scene not found' });
     }
-    const options = db.getOptions(scene.id);
+    const options = stripPlans(db.getOptions(scene.id));
     res.json({ scene, options });
   } catch (err) {
     console.error(err);
@@ -42,17 +46,20 @@ router.post('/scenes/:sceneId/options/:optionId/choose', async (req, res) => {
 
     if (option.target_scene_id) {
       const scene = db.getScene(option.target_scene_id);
-      const options = db.getOptions(scene.id);
+      const options = stripPlans(db.getOptions(scene.id));
       return res.json({ scene, options });
     }
 
     const ancestorChain = db.getAncestorChain(option.scene_id);
-    const context = ancestorChain.map(s => ({
+    const historySteps = ancestorChain.map(s => ({
       option: s.option_chosen,
       content: s.content,
     }));
 
-    const { scene: sceneText, options: optionTexts } = await generateAndValidateScene(context);
+    const { scene: sceneText, options: optionsData } = await generateAndValidateScene(
+      historySteps,
+      option.plan
+    );
 
     const depth = ancestorChain[ancestorChain.length - 1].depth + 1;
     const newSceneId = db.insertScene(
@@ -62,11 +69,11 @@ router.post('/scenes/:sceneId/options/:optionId/choose', async (req, res) => {
       depth
     );
 
-    db.insertOptions(newSceneId, optionTexts);
+    db.insertOptions(newSceneId, optionsData);
     db.setOptionTarget(option.id, newSceneId);
 
     const savedScene = db.getScene(newSceneId);
-    const savedOptions = db.getOptions(newSceneId);
+    const savedOptions = stripPlans(db.getOptions(newSceneId));
 
     res.json({ scene: savedScene, options: savedOptions });
   } catch (err) {
