@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infinite Dungeon</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="homepage">
+    <pre class="logo">
+╔══════════════════════════════════════╗
+║                                      ║
+║   ██╗███╗   ██╗███████╗██╗███╗   ██╗██╗████████╗███████╗   ║
+║   ██║████╗  ██║██╔════╝██║████╗  ██║██║╚══██╔══╝██╔════╝   ║
+║   ██║██╔██╗ ██║█████╗  ██║██╔██╗ ██║██║   ██║   █████╗     ║
+║   ██║██║╚██╗██║██╔══╝  ██║██║╚██╗██║██║   ██║   ██╔══╝     ║
+║   ██║██║ ╚████║██║     ██║██║ ╚████║██║   ██║   ███████╗   ║
+║   ╚═╝╚═╝  ╚═══╝╚═╝     ╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝   ╚══════╝   ║
+║                                      ║
+║        ██████╗ ██╗   ██╗███╗   ██╗ ██████╗ ███████╗ ██████╗ ███╗   ██╗   ║
+║        ██╔══██╗██║   ██║████╗  ██║██╔════╝ ██╔════╝██╔═══██╗████╗  ██║   ║
+║        ██║  ██║██║   ██║██╔██╗ ██║██║  ███╗█████╗  ██║   ██║██╔██╗ ██║   ║
+║        ██║  ██║██║   ██║██║╚██╗██║██║   ██║██╔══╝  ██║   ██║██║╚██╗██║   ║
+║        ██████╔╝╚██████╔╝██║ ╚████║╚██████╔╝███████╗╚██████╔╝██║ ╚████║   ║
+║        ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝   ║
+║                                      ║
+╚══════════════════════════════════════╝
+    </pre>
+
+    <div class="description">
+      <p>An online, procedurally generated choose-your-own-adventure game.</p>
+      <p>Every choice you make creates a new branch in an ever-growing dungeon,<br>shared across all players. No two journeys are the same.</p>
+    </div>
+
+    <div class="homepage-actions">
+      <a href="/game" class="btn primary">Enter the Dungeon</a>
+    </div>
+
+    <div class="settings">
+      <h2>Settings</h2>
+      <div class="setting-row">
+        <label for="fontSize">Font Size:</label>
+        <select id="fontSize">
+          <option value="14">Small</option>
+          <option value="16" selected>Medium</option>
+          <option value="18">Large</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <label for="textSpeed">Text Speed:</label>
+        <select id="textSpeed">
+          <option value="0">Instant</option>
+          <option value="15" selected>Normal</option>
+          <option value="40">Slow</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/homepage.js"></script>
+</body>
+</html>

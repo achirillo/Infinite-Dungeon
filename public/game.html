@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Infinite Dungeon</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="game-container">
+    <div class="game-header">
+      <a href="/" class="btn small">&larr; Exit Dungeon</a>
+      <span class="scene-counter">Depth: <span id="depthCounter">0</span></span>
+    </div>
+
+    <div class="scene-history" id="sceneHistory">
+    </div>
+
+    <div class="current-scene" id="currentScene">
+    </div>
+
+    <div class="options-list" id="optionsList">
+    </div>
+
+    <div class="loading-indicator hidden" id="loadingIndicator">
+      <span class="cursor-blink">&#x2588;</span> Generating next scene...
+    </div>
+
+    <div class="error-message hidden" id="errorMessage"></div>
+  </div>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>
