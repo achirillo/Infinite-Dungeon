@@ -61,22 +61,31 @@ async function initDatabase() {
     db.run('ALTER TABLE options ADD COLUMN plan TEXT');
   }
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id            INTEGER PRIMARY KEY AUTOINCREMENT,
+      email         TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      username      TEXT UNIQUE NOT NULL,
+      role          TEXT NOT NULL DEFAULT 'User',
+      created_at    TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
   const rootResult = db.exec('SELECT id FROM scenes WHERE parent_id IS NULL');
   if (rootResult.length === 0 || rootResult[0].values.length === 0) {
     db.run(
       'INSERT INTO scenes (parent_id, option_chosen, content, depth) VALUES (NULL, NULL, ?, 0)',
-      ['You awaken in a darkened room. The air is cold and damp. A faint light flickers from a crack in the stone wall ahead. The floor is rough beneath your hands. Somewhere in the distance, water drips slowly into a pool, each drop echoing through the silence.']
+      ['You stand before the entrance of the INFINITE DUNGEON, a place of infinite possibility, reward, and danger.  A staircase leads down to a set of large double doors.  Absolutely anything could be beyond those doors, if you wish to enter...']
     );
 
     const rootRes = db.exec('SELECT id FROM scenes WHERE parent_id IS NULL');
     const rootId = rootRes[0].values[0][0];
 
     db.run('INSERT INTO options (scene_id, option_text, plan, sort_order) VALUES (?, ?, ?, ?)',
-      [rootId, 'Examine the crack in the wall', 'The crack leads into a narrow passageway with an eerie glow beyond.', 0]);
+      [rootId, 'Enter the dungeon', 'You enter into a large room with three passageways', 0]);
     db.run('INSERT INTO options (scene_id, option_text, plan, sort_order) VALUES (?, ?, ?, ?)',
-      [rootId, 'Feel around the room in the dark', 'Hidden objects in the room reveal hints about where the player is imprisoned.', 1]);
-    db.run('INSERT INTO options (scene_id, option_text, plan, sort_order) VALUES (?, ?, ?, ?)',
-      [rootId, 'Call out into the darkness', 'A distant voice or creature responds, revealing a potential ally or threat.', 2]);
+      [rootId, 'Actually, nevermind', 'Head back towards a local village', 1]);
   }
 
   saveToFile();
@@ -145,6 +154,37 @@ function setOptionTarget(optionId, targetSceneId) {
   saveToFile();
 }
 
+function getStats() {
+  const sceneCount = db.exec('SELECT COUNT(*) AS c FROM scenes')[0].values[0][0];
+  const optionCount = db.exec('SELECT COUNT(*) AS c FROM options')[0].values[0][0];
+  const maxDepth = db.exec('SELECT MAX(depth) AS m FROM scenes')[0].values[0][0] || 0;
+  return { sceneCount, optionCount, maxDepth };
+}
+
+function createUser(email, passwordHash, username) {
+  const adminUsernames = (process.env.ADMIN_USERNAMES || '').split(',').map(s => s.trim().toLowerCase());
+  const role = adminUsernames.includes(username.toLowerCase()) ? 'Admin' : 'User';
+  db.run(
+    'INSERT INTO users (email, password_hash, username, role) VALUES (?, ?, ?, ?)',
+    [email.toLowerCase(), passwordHash, username, role]
+  );
+  const res = db.exec('SELECT last_insert_rowid() AS id');
+  saveToFile();
+  return { id: res[0].values[0][0], email: email.toLowerCase(), username, role };
+}
+
+function getUserByEmail(email) {
+  const result = db.exec('SELECT id, email, password_hash, username, role FROM users WHERE email = ?', [email.toLowerCase()]);
+  if (result.length === 0 || result[0].values.length === 0) return null;
+  return rowToObject(['id', 'email', 'password_hash', 'username', 'role'], result[0].values[0]);
+}
+
+function getUserById(id) {
+  const result = db.exec('SELECT id, email, username, role FROM users WHERE id = ?', [id]);
+  if (result.length === 0 || result[0].values.length === 0) return null;
+  return rowToObject(result[0].columns, result[0].values[0]);
+}
+
 function rowToScene(row) {
   return {
     id: row[0],
@@ -174,4 +214,8 @@ module.exports = {
   insertScene,
   insertOptions,
   setOptionTarget,
+  getStats,
+  createUser,
+  getUserByEmail,
+  getUserById,
 };

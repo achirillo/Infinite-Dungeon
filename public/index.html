@@ -56,8 +56,40 @@
         </select>
       </div>
     </div>
+
+    <div class="auth-container" id="authContainer">
+      <div class="auth-box logged-out" id="authLoggedOut">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Login</button>
+          <button class="auth-tab" data-tab="register">Register</button>
+        </div>
+        <form class="auth-form" id="loginForm" novalidate>
+          <input type="email" name="email" placeholder="Email" required autocomplete="email">
+          <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+          <button type="submit" class="btn">Login</button>
+          <div class="auth-error hidden" id="loginError"></div>
+        </form>
+        <form class="auth-form hidden" id="registerForm" novalidate>
+          <input type="email" name="email" placeholder="Email" required autocomplete="email">
+          <input type="text" name="username" placeholder="Username" required autocomplete="username">
+          <input type="password" name="password" placeholder="Password (min 6 chars)" required autocomplete="new-password">
+          <button type="submit" class="btn">Register</button>
+          <div class="auth-error hidden" id="registerError"></div>
+        </form>
+      </div>
+      <div class="auth-box logged-in hidden" id="authLoggedIn">
+        <span>Logged in as <strong id="authUsername"></strong></span>
+        <span class="auth-role" id="authRole"></span>
+        <button class="btn small" id="btnLogout">Logout</button>
+      </div>
+    </div>
+
+    <div class="admin-link hidden" id="adminLink">
+      <a href="/admin">Database Admin</a>
+    </div>
   </div>
 
+  <script src="/js/auth.js"></script>
   <script src="/js/homepage.js"></script>
 </body>
 </html>

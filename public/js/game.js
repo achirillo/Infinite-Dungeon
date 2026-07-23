@@ -4,7 +4,7 @@ const historyToggle = document.getElementById('historyToggle');
 const currentScene = document.getElementById('currentScene');
 const optionsList = document.getElementById('optionsList');
 const loadingIndicator = document.getElementById('loadingIndicator');
-const errorMessage = document.getElementById('errorMessage');
+const userIndicator = document.getElementById('userIndicator');
 const depthCounter = document.getElementById('depthCounter');
 
 const SETTINGS = {
@@ -119,5 +119,11 @@ historyToggle.addEventListener('click', () => {
     : '\u00BB';
 });
 
+async function initAuth() {
+  await Auth.fetch();
+  const user = Auth.getUser();
+  userIndicator.textContent = user ? user.username : 'Guest';
+}
+
 applyStoredFontSize();
-loadRootScene();
+initAuth().then(loadRootScene);

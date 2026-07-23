@@ -1,19 +1,35 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 const { initDatabase } = require('./db/database');
+const { attachUser } = require('./middleware/auth');
 const apiRoutes = require('./routes/api');
+const adminRoutes = require('./routes/admin');
+const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(attachUser);
+
+app.use('/api', authRoutes);
 app.use('/api', apiRoutes);
+app.use('/api', adminRoutes);
 
 app.get('/game', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'game.html'));
+});
+
+app.get('/admin', (req, res) => {
+  if (!req.user || req.user.role !== 'Admin') {
+    return res.status(403).send('Admin access required');
+  }
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
 app.get('/:page', (req, res, next) => {

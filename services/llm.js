@@ -58,7 +58,7 @@ async function generateScene(historySteps, chosenPlan) {
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userContent },
     ],
-    temperature: 0.8,
+    temperature: 1,
   });
 
   return response.choices[0].message.content;
