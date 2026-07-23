@@ -4,7 +4,12 @@ const { hashPassword, verifyPassword, signToken } = require('../services/auth');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
-const COOKIE_OPTS = { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' };
+const COOKIE_OPTS = {
+  httpOnly: true,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  sameSite: 'lax',
+  secure: process.env.NODE_ENV === 'production',
+};
 
 router.post('/auth/register', (req, res) => {
   try {

@@ -1,5 +1,7 @@
+const API_BASE = (typeof window !== 'undefined' && window.API_BASE) || '';
+
 async function apiGet(path) {
-  const res = await fetch(path);
+  const res = await fetch(API_BASE + path);
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || 'Request failed');
@@ -8,7 +10,7 @@ async function apiGet(path) {
 }
 
 async function apiPost(path) {
-  const res = await fetch(path, { method: 'POST' });
+  const res = await fetch(API_BASE + path, { method: 'POST' });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(err.error || 'Request failed');

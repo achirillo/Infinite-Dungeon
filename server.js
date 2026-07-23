@@ -10,12 +10,25 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+app.use((_req, res, next) => {
+  res.header('Access-Control-Allow-Origin', IS_PROD ? process.env.CORS_ORIGIN || '*' : '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  if (_req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(attachUser);
+
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime() });
+});
 
 app.use('/api', authRoutes);
 app.use('/api', apiRoutes);
@@ -42,7 +55,7 @@ app.get('/:page', (req, res, next) => {
 
 (async () => {
   await initDatabase();
-  app.listen(PORT, () => {
-    console.log(`Infinite Dungeon running at http://localhost:${PORT}`);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Infinite Dungeon running on port ${PORT}`);
   });
 })();
