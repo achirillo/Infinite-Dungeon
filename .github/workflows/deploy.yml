@@ -1,8 +1,8 @@
-yamlname: Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["master"] # Change to master if your default branch is master
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -11,18 +11,27 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   deploy:
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Inject API base URL
+        if: vars.API_BASE_URL
+        run: |
+          find public -name '*.html' -type f | while read file; do
+            sed -i "s|window.API_BASE = ''|window.API_BASE = '${{ vars.API_BASE_URL }}'|g" "$file"
+          done
+          echo "Injected API_BASE_URL=${{ vars.API_BASE_URL }}"
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
@@ -30,7 +39,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './public' # This targets your public folder
+          path: public
 
       - name: Deploy to GitHub Pages
         id: deployment
