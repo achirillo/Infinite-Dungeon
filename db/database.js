@@ -72,6 +72,15 @@ async function initDatabase() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS saves (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER UNIQUE NOT NULL REFERENCES users(id),
+      scene_id   INTEGER NOT NULL REFERENCES scenes(id),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
   const rootResult = db.exec('SELECT id FROM scenes WHERE parent_id IS NULL');
   if (rootResult.length === 0 || rootResult[0].values.length === 0) {
     db.run(
@@ -185,6 +194,25 @@ function getUserById(id) {
   return rowToObject(result[0].columns, result[0].values[0]);
 }
 
+function saveProgress(userId, sceneId) {
+  db.run(
+    'INSERT INTO saves (user_id, scene_id) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET scene_id = ?, updated_at = datetime(\'now\')',
+    [userId, sceneId, sceneId]
+  );
+  saveToFile();
+}
+
+function getSavedSceneId(userId) {
+  const result = db.exec('SELECT scene_id FROM saves WHERE user_id = ?', [userId]);
+  if (result.length === 0 || result[0].values.length === 0) return null;
+  return result[0].values[0][0];
+}
+
+function clearSave(userId) {
+  db.run('DELETE FROM saves WHERE user_id = ?', [userId]);
+  saveToFile();
+}
+
 function rowToScene(row) {
   return {
     id: row[0],
@@ -218,4 +246,7 @@ module.exports = {
   createUser,
   getUserByEmail,
   getUserById,
+  saveProgress,
+  getSavedSceneId,
+  clearSave,
 };

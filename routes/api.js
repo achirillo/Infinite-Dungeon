@@ -82,4 +82,39 @@ router.post('/scenes/:sceneId/options/:optionId/choose', async (req, res) => {
   }
 });
 
+router.get('/saves/current', (req, res) => {
+  try {
+    if (!req.user) return res.json({ sceneId: null });
+    const sceneId = db.getSavedSceneId(req.user.id);
+    res.json({ sceneId: sceneId || null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load save' });
+  }
+});
+
+router.post('/saves', (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Login required' });
+    const { sceneId } = req.body;
+    if (!sceneId) return res.status(400).json({ error: 'sceneId required' });
+    db.saveProgress(req.user.id, sceneId);
+    res.json({ saved: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to save progress' });
+  }
+});
+
+router.delete('/saves', (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Login required' });
+    db.clearSave(req.user.id);
+    res.json({ cleared: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to clear save' });
+  }
+});
+
 module.exports = router;

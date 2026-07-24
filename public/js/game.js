@@ -4,17 +4,16 @@ const historyToggle = document.getElementById('historyToggle');
 const currentScene = document.getElementById('currentScene');
 const optionsList = document.getElementById('optionsList');
 const loadingIndicator = document.getElementById('loadingIndicator');
+const errorMessage = document.getElementById('errorMessage');
 const userIndicator = document.getElementById('userIndicator');
 const depthCounter = document.getElementById('depthCounter');
+const btnReturnStart = document.getElementById('btnReturnStart');
 
-const SETTINGS = {
-  get fontSize() { return localStorage.getItem('fontSize') || '16'; },
-  get textSpeed() { return parseInt(localStorage.getItem('textSpeed') || '15', 10); },
-};
+const SAVE_KEY = 'dungeon_save';
 let lastSceneId = null;
 
 function applyStoredFontSize() {
-  document.body.style.fontSize = SETTINGS.fontSize + 'px';
+  document.body.style.fontSize = (localStorage.getItem('fontSize') || '16') + 'px';
 }
 
 function showError(msg) {
@@ -71,6 +70,54 @@ function disableOptions() {
   optionsList.querySelectorAll('button').forEach(b => b.disabled = true);
 }
 
+function enableOptions() {
+  optionsList.querySelectorAll('button').forEach(b => b.disabled = false);
+}
+
+async function saveProgress() {
+  if (Auth.isLoggedIn()) {
+    try {
+      await fetch(API_BASE + '/api/saves', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sceneId: lastSceneId }),
+      });
+    } catch (_err) { /* silent */ }
+  } else {
+    localStorage.setItem(SAVE_KEY, lastSceneId);
+  }
+}
+
+async function clearSave() {
+  if (Auth.isLoggedIn()) {
+    try {
+      await fetch(API_BASE + '/api/saves', { method: 'DELETE' });
+    } catch (_err) { /* silent */ }
+  } else {
+    localStorage.removeItem(SAVE_KEY);
+  }
+}
+
+async function loadSavedSceneId() {
+  if (Auth.isLoggedIn()) {
+    try {
+      const res = await fetch(API_BASE + '/api/saves/current');
+      const data = await res.json();
+      return data.sceneId || null;
+    } catch (_err) { return null; }
+  }
+  const saved = localStorage.getItem(SAVE_KEY);
+  return saved ? parseInt(saved, 10) : null;
+}
+
+async function loadScene(sceneId) {
+  const data = await API.getScene(sceneId);
+  lastSceneId = data.scene.id;
+  renderCurrentScene(data.scene);
+  renderOptions(data.options);
+  await saveProgress();
+}
+
 async function chooseOption(option) {
   hideError();
   disableOptions();
@@ -89,7 +136,7 @@ async function chooseOption(option) {
     renderCurrentScene(data.scene);
     renderOptions(data.options);
     lastSceneId = data.scene.id;
-    depthCounter.textContent = data.scene.depth;
+    await saveProgress();
   } catch (err) {
     setLoading(false);
     showError(err.message);
@@ -97,19 +144,45 @@ async function chooseOption(option) {
   }
 }
 
-function enableOptions() {
-  optionsList.querySelectorAll('button').forEach(b => b.disabled = false);
+async function returnToStart() {
+  sceneHistory.innerHTML = '';
+  sceneHistory.querySelectorAll('*').forEach(e => e.remove());
+  sceneHistory.replaceChildren();
+  hideError();
+  setLoading(false);
+  await clearSave();
+  const data = await API.getRootScene();
+  lastSceneId = data.scene.id;
+  renderCurrentScene(data.scene);
+  renderOptions(data.options);
+  await saveProgress();
+  sceneHistory.scrollTop = 0;
 }
 
-async function loadRootScene() {
-  try {
-    const data = await API.getRootScene();
-    lastSceneId = data.scene.id;
-    renderCurrentScene(data.scene);
-    renderOptions(data.options);
-  } catch (err) {
-    showError(err.message);
+async function initGame() {
+  applyStoredFontSize();
+  await Auth.fetch();
+  const user = Auth.getUser();
+  userIndicator.textContent = user ? user.username : 'Guest';
+
+  const savedSceneId = await loadSavedSceneId();
+
+  if (savedSceneId) {
+    try {
+      await loadScene(savedSceneId);
+      return;
+    } catch (_err) {
+      await clearSave();
+    }
   }
+
+  const data = await API.getRootScene();
+  lastSceneId = data.scene.id;
+  sceneHistory.innerHTML = '';
+  sceneHistory.replaceChildren();
+  renderCurrentScene(data.scene);
+  renderOptions(data.options);
+  await saveProgress();
 }
 
 historyToggle.addEventListener('click', () => {
@@ -119,11 +192,6 @@ historyToggle.addEventListener('click', () => {
     : '\u00BB';
 });
 
-async function initAuth() {
-  await Auth.fetch();
-  const user = Auth.getUser();
-  userIndicator.textContent = user ? user.username : 'Guest';
-}
+btnReturnStart.addEventListener('click', returnToStart);
 
-applyStoredFontSize();
-initAuth().then(loadRootScene);
+initGame();

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Infinite Dungeon</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <script>window.API_BASE = '';</script>
+  <div class="login-page">
+    <div class="login-header">
+      <a href="/" class="btn small">&larr; Back to Home</a>
+    </div>
+
+    <div class="login-card">
+      <h1>Sign In</h1>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Login</button>
+        <button class="auth-tab" data-tab="register">Register</button>
+      </div>
+
+      <form class="auth-form" id="loginForm" novalidate>
+        <input type="email" name="email" placeholder="Email" required autocomplete="email">
+        <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+        <button type="submit" class="btn">Login</button>
+        <div class="auth-error hidden" id="loginError"></div>
+      </form>
+
+      <form class="auth-form hidden" id="registerForm" novalidate>
+        <input type="email" name="email" placeholder="Email" required autocomplete="email">
+        <input type="text" name="username" placeholder="Username" required autocomplete="username">
+        <input type="password" name="password" placeholder="Password (min 6 chars)" required autocomplete="new-password">
+        <button type="submit" class="btn">Register</button>
+        <div class="auth-error hidden" id="registerError"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/auth.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>
