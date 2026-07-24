@@ -25,7 +25,7 @@ function updateAuthBar() {
   } else {
     authBarText.textContent = 'Playing as Guest';
     authBarBtn.textContent = 'Login';
-    authBarBtn.href = '/login';
+    authBarBtn.href = 'login';
     authBarBtn.onclick = null;
     adminBarLink.classList.add('hidden');
   }

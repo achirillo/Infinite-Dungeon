@@ -26,7 +26,7 @@ loginForm.addEventListener('submit', async (e) => {
   const password = loginForm.password.value;
   try {
     await Auth.login(email, password);
-    window.location.href = '/';
+    window.location.href = './';
   } catch (err) {
     loginError.textContent = err.message;
     loginError.classList.remove('hidden');
@@ -41,7 +41,7 @@ registerForm.addEventListener('submit', async (e) => {
   const password = registerForm.password.value;
   try {
     await Auth.register(email, password, username);
-    window.location.href = '/';
+    window.location.href = './';
   } catch (err) {
     registerError.textContent = err.message;
     registerError.classList.remove('hidden');
