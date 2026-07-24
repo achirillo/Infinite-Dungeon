@@ -42,6 +42,10 @@ app.get('/login', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+app.get('/about', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'about.html'));
+});
+
 app.get('/admin', (req, res) => {
   if (!req.user || req.user.role !== 'Admin') {
     return res.status(403).send('Admin access required');

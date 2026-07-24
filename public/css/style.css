@@ -280,6 +280,75 @@ a:hover {
   text-align: center;
 }
 
+/* ---- About Page ---- */
+.about-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.about-header {
+  width: 100%;
+  max-width: 700px;
+  margin-bottom: 28px;
+}
+
+.about-card {
+  width: 100%;
+  max-width: 640px;
+  border: 1px solid var(--text-dim);
+  padding: 32px 28px;
+  line-height: 1.7;
+}
+
+.about-card h1 {
+  font-size: 1.1em;
+  font-weight: normal;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+
+.about-card h2 {
+  font-size: 0.95em;
+  font-weight: normal;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+
+.about-card p {
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.about-card ul {
+  color: var(--text-dim);
+  padding-left: 20px;
+  margin-bottom: 10px;
+}
+
+.about-card ul li {
+  margin-bottom: 4px;
+}
+
+.about-card strong {
+  color: var(--text);
+}
+
+.about-card a {
+  color: var(--text-dim);
+}
+
+.about-card a:hover {
+  color: var(--accent);
+}
+
 /* ---- Game ---- */
 .game-container {
   max-width: 1200px;
