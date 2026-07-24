@@ -521,6 +521,10 @@ a:hover {
   background: #0d1a2a;
 }
 
+.option-hidden {
+  opacity: 0;
+}
+
 .loading-indicator {
   margin-top: 12px;
   color: var(--accent);

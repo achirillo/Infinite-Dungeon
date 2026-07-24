@@ -117,4 +117,29 @@ router.delete('/saves', (req, res) => {
   }
 });
 
+router.get('/settings', (req, res) => {
+  try {
+    if (!req.user) return res.json({ fontSize: null, textSpeed: null });
+    const settings = db.getUserSettings(req.user.id);
+    res.json(settings || { fontSize: '16', textSpeed: 15 });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load settings' });
+  }
+});
+
+router.put('/settings', (req, res) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Login required' });
+    const { fontSize, textSpeed } = req.body;
+    const fs = String(fontSize || '16');
+    const ts = textSpeed !== undefined && textSpeed !== null ? parseInt(String(textSpeed), 10) : 15;
+    db.saveUserSettings(req.user.id, fs, ts);
+    res.json({ saved: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to save settings' });
+  }
+});
+
 module.exports = router;

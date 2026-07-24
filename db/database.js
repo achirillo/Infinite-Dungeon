@@ -81,6 +81,14 @@ async function initDatabase() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      user_id    INTEGER PRIMARY KEY REFERENCES users(id),
+      font_size  TEXT DEFAULT '16',
+      text_speed INTEGER DEFAULT 15
+    )
+  `);
+
   const rootResult = db.exec('SELECT id FROM scenes WHERE parent_id IS NULL');
   if (rootResult.length === 0 || rootResult[0].values.length === 0) {
     db.run(
@@ -213,6 +221,20 @@ function clearSave(userId) {
   saveToFile();
 }
 
+function getUserSettings(userId) {
+  const result = db.exec('SELECT font_size, text_speed FROM user_settings WHERE user_id = ?', [userId]);
+  if (result.length === 0 || result[0].values.length === 0) return null;
+  return { fontSize: result[0].values[0][0], textSpeed: result[0].values[0][1] };
+}
+
+function saveUserSettings(userId, fontSize, textSpeed) {
+  db.run(
+    'INSERT INTO user_settings (user_id, font_size, text_speed) VALUES (?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET font_size = ?, text_speed = ?',
+    [userId, fontSize, textSpeed, fontSize, textSpeed]
+  );
+  saveToFile();
+}
+
 function rowToScene(row) {
   return {
     id: row[0],
@@ -249,4 +271,6 @@ module.exports = {
   saveProgress,
   getSavedSceneId,
   clearSave,
+  getUserSettings,
+  saveUserSettings,
 };

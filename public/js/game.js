@@ -10,10 +10,25 @@ const depthCounter = document.getElementById('depthCounter');
 const btnReturnStart = document.getElementById('btnReturnStart');
 
 const SAVE_KEY = 'dungeon_save';
+const DEFAULTS = { fontSize: '16', textSpeed: 15 };
 let lastSceneId = null;
+let typewriterQueue = null;
+let optionsQueue = [];
+let currentSpeed = DEFAULTS.textSpeed;
 
-function applyStoredFontSize() {
-  document.body.style.fontSize = (localStorage.getItem('fontSize') || '16') + 'px';
+async function loadSettings() {
+  if (Auth.isLoggedIn()) {
+    try {
+      const res = await fetch(API_BASE + '/api/settings');
+      const data = await res.json();
+      return { fontSize: data.fontSize || DEFAULTS.fontSize, textSpeed: data.textSpeed ?? DEFAULTS.textSpeed };
+    } catch (_err) { /* fall through */ }
+  }
+  const raw = parseInt(localStorage.getItem('textSpeed'), 10);
+  return {
+    fontSize: localStorage.getItem('fontSize') || DEFAULTS.fontSize,
+    textSpeed: isNaN(raw) ? DEFAULTS.textSpeed : raw,
+  };
 }
 
 function showError(msg) {
@@ -49,20 +64,68 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function renderCurrentScene(scene) {
-  currentScene.innerHTML = `<div class="scene-text">${escapeHtml(scene.content)}</div><span class="cursor-blink">&#x2588;</span>`;
+function typewriteText(el, text, delay, callback) {
+  if (typewriterQueue) clearTimeout(typewriterQueue);
+  const cursor = el.querySelector('.cursor-blink');
+  while (el.firstChild && el.firstChild !== cursor) {
+    el.removeChild(el.firstChild);
+  }
+  let i = 0;
+  function tick() {
+    if (i < text.length) {
+      el.insertBefore(document.createTextNode(text[i]), cursor);
+      i++;
+      if (delay > 0) {
+        typewriterQueue = setTimeout(tick, delay);
+      } else {
+        tick();
+      }
+    } else if (callback) {
+      callback();
+    }
+  }
+  tick();
+}
+
+function renderCurrentScene(scene, speed, options) {
+  currentScene.innerHTML = '';
+  const sceneTextDiv = document.createElement('div');
+  sceneTextDiv.className = 'scene-text';
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor-blink';
+  cursor.innerHTML = '&#x2588;';
+  sceneTextDiv.appendChild(cursor);
+  currentScene.appendChild(sceneTextDiv);
   depthCounter.textContent = scene.depth;
+
+  if (speed <= 0) {
+    sceneTextDiv.insertBefore(document.createTextNode(scene.content), cursor);
+    renderOptions(options);
+  } else {
+    typewriteText(sceneTextDiv, scene.content, speed, () => renderOptions(options));
+  }
 }
 
 function renderOptions(options) {
   hideError();
+  optionsQueue.forEach(clearTimeout);
+  optionsQueue = [];
   optionsList.innerHTML = '';
-  options.forEach(opt => {
+
+  options.forEach((opt, idx) => {
     const btn = document.createElement('button');
-    btn.className = 'option-btn' + (opt.target_scene_id === null ? ' ungenerated' : '');
+    btn.className = 'option-btn' + (opt.target_scene_id === null ? ' ungenerated' : '') + ' option-hidden';
     btn.textContent = `> ${opt.option_text}`;
     btn.addEventListener('click', () => chooseOption(opt));
     optionsList.appendChild(btn);
+
+    if (currentSpeed <= 0) {
+      btn.classList.remove('option-hidden');
+    } else {
+      optionsQueue.push(setTimeout(() => {
+        btn.classList.remove('option-hidden');
+      }, 400 + idx * currentSpeed * 30));
+    }
   });
 }
 
@@ -110,11 +173,10 @@ async function loadSavedSceneId() {
   return saved ? parseInt(saved, 10) : null;
 }
 
-async function loadScene(sceneId) {
+async function loadScene(sceneId, speed) {
   const data = await API.getScene(sceneId);
   lastSceneId = data.scene.id;
-  renderCurrentScene(data.scene);
-  renderOptions(data.options);
+  renderCurrentScene(data.scene, speed, data.options);
   await saveProgress();
 }
 
@@ -133,8 +195,7 @@ async function chooseOption(option) {
     ));
     sceneHistory.scrollTop = sceneHistory.scrollHeight;
 
-    renderCurrentScene(data.scene);
-    renderOptions(data.options);
+    renderCurrentScene(data.scene, currentSpeed, data.options);
     lastSceneId = data.scene.id;
     await saveProgress();
   } catch (err) {
@@ -144,32 +205,32 @@ async function chooseOption(option) {
   }
 }
 
-async function returnToStart() {
-  sceneHistory.innerHTML = '';
-  sceneHistory.querySelectorAll('*').forEach(e => e.remove());
+async function returnToStart(speed) {
   sceneHistory.replaceChildren();
   hideError();
   setLoading(false);
   await clearSave();
   const data = await API.getRootScene();
   lastSceneId = data.scene.id;
-  renderCurrentScene(data.scene);
-  renderOptions(data.options);
+  renderCurrentScene(data.scene, speed, data.options);
   await saveProgress();
   sceneHistory.scrollTop = 0;
 }
 
 async function initGame() {
-  applyStoredFontSize();
   await Auth.fetch();
   const user = Auth.getUser();
   userIndicator.textContent = user ? user.username : 'Guest';
+
+  const settings = await loadSettings();
+  document.body.style.fontSize = settings.fontSize + 'px';
+  currentSpeed = settings.textSpeed;
 
   const savedSceneId = await loadSavedSceneId();
 
   if (savedSceneId) {
     try {
-      await loadScene(savedSceneId);
+      await loadScene(savedSceneId, settings.textSpeed);
       return;
     } catch (_err) {
       await clearSave();
@@ -178,10 +239,8 @@ async function initGame() {
 
   const data = await API.getRootScene();
   lastSceneId = data.scene.id;
-  sceneHistory.innerHTML = '';
   sceneHistory.replaceChildren();
-  renderCurrentScene(data.scene);
-  renderOptions(data.options);
+  renderCurrentScene(data.scene, settings.textSpeed, data.options);
   await saveProgress();
 }
 
@@ -192,6 +251,8 @@ historyToggle.addEventListener('click', () => {
     : '\u00BB';
 });
 
-btnReturnStart.addEventListener('click', returnToStart);
+btnReturnStart.addEventListener('click', () => {
+  returnToStart(currentSpeed);
+});
 
 initGame();
