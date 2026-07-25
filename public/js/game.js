@@ -15,6 +15,7 @@ let lastSceneId = null;
 let typewriterQueue = null;
 let optionsQueue = [];
 let currentSpeed = DEFAULTS.textSpeed;
+let currentSceneContent = '';
 
 async function loadSettings() {
   if (Auth.isLoggedIn()) {
@@ -88,6 +89,7 @@ function typewriteText(el, text, delay, callback) {
 }
 
 function renderCurrentScene(scene, speed, options) {
+  currentSceneContent = scene.content;
   currentScene.innerHTML = '';
   const sceneTextDiv = document.createElement('div');
   sceneTextDiv.className = 'scene-text';
@@ -175,6 +177,24 @@ async function loadSavedSceneId() {
 
 async function loadScene(sceneId, speed) {
   const data = await API.getScene(sceneId);
+
+  const chain = [data.scene];
+  let current = data.scene;
+  while (current && current.parent_id) {
+    const parent = await API.getScene(current.parent_id);
+    chain.unshift(parent.scene);
+    current = parent.scene;
+  }
+
+  sceneHistory.replaceChildren();
+  for (let i = 0; i < chain.length - 1; i++) {
+    sceneHistory.appendChild(createSceneElement(
+      { content: chain[i].content },
+      chain[i + 1].option_chosen
+    ));
+  }
+  sceneHistory.scrollTop = sceneHistory.scrollHeight;
+
   lastSceneId = data.scene.id;
   renderCurrentScene(data.scene, speed, data.options);
   await saveProgress();
@@ -190,7 +210,7 @@ async function chooseOption(option) {
     setLoading(false);
 
     sceneHistory.appendChild(createSceneElement(
-      { content: currentScene.querySelector('.scene-text').textContent },
+      { content: currentSceneContent },
       option.option_text
     ));
     sceneHistory.scrollTop = sceneHistory.scrollHeight;
