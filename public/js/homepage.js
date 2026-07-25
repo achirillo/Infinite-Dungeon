@@ -4,7 +4,7 @@ const adminBarLink = document.getElementById('adminBarLink');
 const fontSizeSelect = document.getElementById('fontSize');
 const textSpeedSelect = document.getElementById('textSpeed');
 
-const DEFAULTS = { fontSize: '16', textSpeed: 15 };
+const DEFAULTS = { fontSize: '16', textSpeed: 10 };
 
 async function loadSettings() {
   if (Auth.isLoggedIn()) {
@@ -14,9 +14,10 @@ async function loadSettings() {
       return { fontSize: data.fontSize || DEFAULTS.fontSize, textSpeed: data.textSpeed ?? DEFAULTS.textSpeed };
     } catch (_err) { /* fall through to localStorage */ }
   }
+  const raw = parseInt(localStorage.getItem('textSpeed'), 10);
   return {
     fontSize: localStorage.getItem('fontSize') || DEFAULTS.fontSize,
-    textSpeed: parseInt(localStorage.getItem('textSpeed'), 10) || DEFAULTS.textSpeed,
+    textSpeed: isNaN(raw) ? DEFAULTS.textSpeed : raw,
   };
 }
 
