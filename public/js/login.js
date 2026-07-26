@@ -1,8 +1,22 @@
+/**
+ * Login / registration page UI logic.
+ *
+ * Handles tab switching between the Login and Register forms, form submission,
+ * and error display.  On success, redirects to the homepage.
+ *
+ * @module login
+ */
+
+/** DOM references. */
 const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const loginError = document.getElementById('loginError');
 const registerError = document.getElementById('registerError');
 
+/**
+ * Switch the visible form tab (Login or Register).
+ * @param {string} tabName - 'login' or 'register'
+ */
 function showForm(tabName) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
@@ -15,10 +29,12 @@ function showForm(tabName) {
   }
 }
 
+/** Tab click handlers. */
 document.querySelectorAll('.auth-tab').forEach(tab => {
   tab.addEventListener('click', () => showForm(tab.dataset.tab));
 });
 
+/** Login form submission handler. */
 loginForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   loginError.classList.add('hidden');
@@ -33,6 +49,7 @@ loginForm.addEventListener('submit', async (e) => {
   }
 });
 
+/** Register form submission handler. */
 registerForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   registerError.classList.add('hidden');

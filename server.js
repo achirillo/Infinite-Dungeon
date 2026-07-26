@@ -1,3 +1,14 @@
+/**
+ * Infinite Dungeon - Main server entry point.
+ *
+ * Sets up an Express web server that serves the static front-end and provides
+ * REST API routes for the procedural text-adventure game.  On startup the
+ * SQLite database is initialised (or opened if it already exists).
+ *
+ * @module server
+ */
+
+/** Load environment variables from .env into process.env. */
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -12,6 +23,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const IS_PROD = process.env.NODE_ENV === 'production';
 
+/** CORS headers – allow cross-origin requests so the front-end can talk to the API. */
 app.use((_req, res, next) => {
   res.header('Access-Control-Allow-Origin', IS_PROD ? process.env.CORS_ORIGIN || '*' : '*');
   res.header('Access-Control-Allow-Credentials', 'true');
@@ -24,8 +36,10 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+/** Attach the authenticated user (if any) to every request. */
 app.use(attachUser);
 
+/** Health-check endpoint. */
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', uptime: process.uptime() });
 });
@@ -34,18 +48,22 @@ app.use('/api', authRoutes);
 app.use('/api', apiRoutes);
 app.use('/api', adminRoutes);
 
+/** Serve the game page. */
 app.get('/game', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'game.html'));
 });
 
+/** Serve the login/registration page. */
 app.get('/login', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+/** Serve the about page. */
 app.get('/about', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'about.html'));
 });
 
+/** Serve the admin panel (admin-only). */
 app.get('/admin', (req, res) => {
   if (!req.user || req.user.role !== 'Admin') {
     return res.status(403).send('Admin access required');
@@ -53,6 +71,7 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+/** Catch-all route – serves the homepage for the root path or index.html. */
 app.get('/:page', (req, res, next) => {
   const page = req.params.page;
   if (page === 'index.html' || page === '') {
@@ -61,6 +80,7 @@ app.get('/:page', (req, res, next) => {
   next();
 });
 
+/** Bootstrap: initialise the database, then start listening. */
 (async () => {
   await initDatabase();
   app.listen(PORT, '0.0.0.0', () => {

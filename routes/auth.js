@@ -1,9 +1,25 @@
+/**
+ * Authentication routes – login, register, logout, and session info.
+ *
+ * Mounted under `/api/auth`.
+ *
+ * @module routes/auth
+ */
+
 const express = require('express');
 const db = require('../db/database');
 const { hashPassword, verifyPassword, signToken } = require('../services/auth');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
+
+/**
+ * Standard cookie options for the JWT token cookie.
+ * - httpOnly: prevents client-side JS access (XSS mitigation)
+ * - maxAge: 7 days
+ * - sameSite: lax (allows links from other sites)
+ * - secure: only sent over HTTPS in production
+ */
 const COOKIE_OPTS = {
   httpOnly: true,
   maxAge: 7 * 24 * 60 * 60 * 1000,
@@ -11,6 +27,11 @@ const COOKIE_OPTS = {
   secure: process.env.NODE_ENV === 'production',
 };
 
+/**
+ * POST /api/auth/register
+ * Creates a new user account. Validates input, hashes the password,
+ * and returns a signed JWT cookie.
+ */
 router.post('/auth/register', (req, res) => {
   try {
     const { email, password, username } = req.body;
@@ -48,6 +69,11 @@ router.post('/auth/register', (req, res) => {
   }
 });
 
+/**
+ * POST /api/auth/login
+ * Authenticates a user with email + password.
+ * On success, sets the JWT cookie and returns user info.
+ */
 router.post('/auth/login', (req, res) => {
   try {
     const { email, password } = req.body;
@@ -70,11 +96,19 @@ router.post('/auth/login', (req, res) => {
   }
 });
 
+/**
+ * POST /api/auth/logout
+ * Clears the JWT cookie to log the user out.
+ */
 router.post('/auth/logout', (_req, res) => {
   res.clearCookie('token');
   res.json({ message: 'Logged out' });
 });
 
+/**
+ * GET /api/auth/me
+ * Returns the currently authenticated user (from the JWT cookie), or null.
+ */
 router.get('/auth/me', (req, res) => {
   res.json({ user: req.user || null });
 });

@@ -7,12 +7,17 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Backend API base URL – hard-coded for Render deployment; replaced at build time. -->
   <script>window.API_BASE = 'https://infinite-dungeon-ujbn.onrender.com';</script>
+
+  <!-- Auth bar: shows login status and admin link in the top-right corner. -->
   <div class="auth-bar" id="authBar">
     <span id="authBarText">Playing as Guest</span>
     <a id="authBarBtn" href="login" class="btn small">Login</a>
     <a id="adminBarLink" class="admin-link hidden" href="admin">Admin</a>
   </div>
+
+  <!-- Main homepage content. -->
   <div class="homepage">
     <pre class="logo">
 ╔══════════════════════════════════════════════════════════════════════════╗
@@ -43,6 +48,7 @@
       <a href="game" class="btn primary">Enter the Dungeon</a>
     </div>
 
+    <!-- Settings panel: font size and text speed. -->
     <div class="settings">
       <h2>Settings</h2>
       <div class="setting-row">
@@ -64,6 +70,7 @@
     </div>
   </div>
 
+  <!-- Client-side scripts. -->
   <script src="js/auth.js"></script>
   <script src="js/homepage.js"></script>
 </body>

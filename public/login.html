@@ -7,20 +7,27 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+  <!-- Backend API base URL – hard-coded for Render deployment; replaced at build time. -->
   <script>window.API_BASE = 'https://infinite-dungeon-ujbn.onrender.com';</script>
+
+  <!-- Login / registration page. -->
   <div class="login-page">
+    <!-- Back-to-home link. -->
     <div class="login-header">
       <a href="./" class="btn small">&larr; Back to Home</a>
     </div>
 
+    <!-- Auth card with tabbed Login/Register forms. -->
     <div class="login-card">
       <h1>Sign In</h1>
 
+      <!-- Tab switcher. -->
       <div class="auth-tabs">
         <button class="auth-tab active" data-tab="login">Login</button>
         <button class="auth-tab" data-tab="register">Register</button>
       </div>
 
+      <!-- Login form. -->
       <form class="auth-form" id="loginForm" novalidate>
         <input type="email" name="email" placeholder="Email" required autocomplete="email">
         <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
@@ -28,6 +35,7 @@
         <div class="auth-error hidden" id="loginError"></div>
       </form>
 
+      <!-- Register form (hidden by default). -->
       <form class="auth-form hidden" id="registerForm" novalidate>
         <input type="email" name="email" placeholder="Email" required autocomplete="email">
         <input type="text" name="username" placeholder="Username" required autocomplete="username">
@@ -38,6 +46,7 @@
     </div>
   </div>
 
+  <!-- Client-side scripts. -->
   <script src="js/auth.js"></script>
   <script src="js/login.js"></script>
 </body>

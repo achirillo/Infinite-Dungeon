@@ -1,11 +1,26 @@
+/**
+ * Homepage UI logic.
+ *
+ * Manages the auth bar (login/logout button, admin link), the settings panel
+ * (font size / text speed), and the "Enter the Dungeon" call-to-action.
+ *
+ * @module homepage
+ */
+
+/** DOM references. */
 const authBarText = document.getElementById('authBarText');
 const authBarBtn = document.getElementById('authBarBtn');
 const adminBarLink = document.getElementById('adminBarLink');
 const fontSizeSelect = document.getElementById('fontSize');
 const textSpeedSelect = document.getElementById('textSpeed');
 
+/** Default display settings. */
 const DEFAULTS = { fontSize: '16', textSpeed: 10 };
 
+/**
+ * Load display settings from the server (logged-in users) or localStorage (guests).
+ * @returns {Promise<{ fontSize: string, textSpeed: number }>}
+ */
 async function loadSettings() {
   if (Auth.isLoggedIn()) {
     try {
@@ -21,6 +36,11 @@ async function loadSettings() {
   };
 }
 
+/**
+ * Persist display settings to the server (logged in) and/or localStorage.
+ * @param {string} fontSize
+ * @param {number} textSpeed
+ */
 async function saveSettings(fontSize, textSpeed) {
   if (Auth.isLoggedIn()) {
     try {
@@ -35,10 +55,18 @@ async function saveSettings(fontSize, textSpeed) {
   localStorage.setItem('textSpeed', textSpeed);
 }
 
+/**
+ * Apply the selected font size to the document body.
+ * @param {string} fontSize - CSS font-size value in px.
+ */
 function applyFontSize(fontSize) {
   document.body.style.fontSize = fontSize + 'px';
 }
 
+/**
+ * Handler for when either settings dropdown changes.
+ * Applies the new value immediately and persists it.
+ */
 async function onSettingChange() {
   const fontSize = fontSizeSelect.value;
   const textSpeed = parseInt(textSpeedSelect.value, 10);
@@ -46,6 +74,11 @@ async function onSettingChange() {
   await saveSettings(fontSize, textSpeed);
 }
 
+/**
+ * Update the top auth bar to reflect the current login state.
+ * Shows username + logout for logged-in users, "Login" link for guests.
+ * Shows the Admin link if the user has the Admin role.
+ */
 function updateAuthBar() {
   const user = Auth.getUser();
   if (user) {
@@ -70,6 +103,9 @@ function updateAuthBar() {
   }
 }
 
+/**
+ * Initialise the homepage: check auth, load settings, set up event listeners.
+ */
 async function init() {
   await Auth.fetch();
 

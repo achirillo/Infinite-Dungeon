@@ -1,19 +1,33 @@
+/**
+ * Simple integration / smoke test suite.
+ *
+ * Validates that the database can be initialised with a fresh DB,
+ * that seed data (root scene + options) exists, and that auth helpers,
+ * middleware exports, route modules, and user CRUD all work correctly.
+ *
+ * Run with:  node test.js
+ */
+
 const assert = require('assert');
 const path = require('path');
 const fs = require('fs');
 
 const db = require('./db/database');
 
+/** Entry point – sets up test environment and runs all assertions. */
 async function run() {
+  /** Minimal API/Middleware test environment. */
   process.env.OPENAI_API_KEY = 'test-key';
   process.env.JWT_SECRET = 'test-secret';
 
+  /** Start with a clean database. */
   const dbPath = path.join(__dirname, 'data', 'dungeon.db');
   if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
 
   try {
     await db.initDatabase();
 
+    /** --- Database tests --- */
     const root = db.getRootScene();
     assert.ok(root, 'Root scene should exist');
     assert.strictEqual(root.depth, 0);
@@ -28,6 +42,7 @@ async function run() {
     const chain = db.getAncestorChain(root.id);
     assert.ok(chain.length > 0);
 
+    /** --- Route module exports --- */
     const routes = require('./routes/api');
     assert.ok(typeof routes === 'function');
 
@@ -37,6 +52,7 @@ async function run() {
     const adminRoutes = require('./routes/admin');
     assert.ok(typeof adminRoutes === 'function');
 
+    /** --- Auth service --- */
     const { hashPassword, verifyPassword, signToken, verifyToken } = require('./services/auth');
     const hash = hashPassword('test123');
     assert.ok(hash, 'hashPassword should return a hash');
@@ -49,11 +65,13 @@ async function run() {
     assert.strictEqual(payload.username, 'test');
     assert.strictEqual(payload.role, 'User');
 
+    /** --- Auth middleware exports --- */
     const { attachUser, requireAuth, requireAdmin } = require('./middleware/auth');
     assert.ok(typeof attachUser === 'function');
     assert.ok(typeof requireAuth === 'function');
     assert.ok(typeof requireAdmin === 'function');
 
+    /** --- User CRUD --- */
     const user = db.createUser('test@example.com', hashPassword('test123'), 'TestUser');
     assert.ok(user, 'createUser should return a user');
     assert.strictEqual(user.username, 'TestUser');

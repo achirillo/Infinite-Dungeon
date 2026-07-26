@@ -1,3 +1,12 @@
+/**
+ * Admin routes – database stats, backup/restore/reset.
+ *
+ * All routes require Admin role (enforced by `requireAdmin` middleware).
+ * Mounted under `/api/admin`.
+ *
+ * @module routes/admin
+ */
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -7,14 +16,23 @@ const BACKUPS_DIR = path.join(__dirname, '..', 'backups');
 const DB_PATH = path.join(__dirname, '..', 'data', 'dungeon.db');
 const router = express.Router();
 
+/** All admin routes require Admin role. */
 router.use(requireAdmin);
 
+/**
+ * Ensure the backups directory exists, creating it if necessary.
+ */
 function ensureBackupsDir() {
   if (!fs.existsSync(BACKUPS_DIR)) {
     fs.mkdirSync(BACKUPS_DIR, { recursive: true });
   }
 }
 
+/**
+ * Collect database statistics: scene count, option count, max depth, and
+ * the on-disk file size of the SQLite database.
+ * @returns {{ sceneCount: number, optionCount: number, maxDepth: number, dbSize: number }}
+ */
 function getDbStats() {
   const db = require('../db/database');
   const stats = db.getStats();
@@ -22,6 +40,10 @@ function getDbStats() {
   return { ...stats, dbSize };
 }
 
+/**
+ * List all `.db` backup files in the backups directory, sorted newest-first.
+ * @returns {Array<{ name: string, size: number, created: string }>}
+ */
 function listBackups() {
   ensureBackupsDir();
   return fs.readdirSync(BACKUPS_DIR)
@@ -38,6 +60,10 @@ function listBackups() {
     .sort((a, b) => b.created.localeCompare(a.created));
 }
 
+/**
+ * GET /api/admin/stats
+ * Returns database statistics (scenes, options, max depth, file size).
+ */
 router.get('/admin/stats', (_req, res) => {
   try {
     res.json(getDbStats());
@@ -46,6 +72,10 @@ router.get('/admin/stats', (_req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/backup
+ * Creates a timestamped backup of the current database file.
+ */
 router.post('/admin/backup', (_req, res) => {
   try {
     ensureBackupsDir();
@@ -61,6 +91,10 @@ router.post('/admin/backup', (_req, res) => {
   }
 });
 
+/**
+ * GET /api/admin/backups
+ * Lists all available database backups.
+ */
 router.get('/admin/backups', (_req, res) => {
   try {
     res.json(listBackups());
@@ -69,6 +103,11 @@ router.get('/admin/backups', (_req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/restore
+ * Restore a specific backup. The current database is automatically backed up
+ * before the restore takes place.
+ */
 router.post('/admin/restore', (req, res) => {
   try {
     const { name } = req.body;
@@ -76,6 +115,7 @@ router.post('/admin/restore', (req, res) => {
     const src = path.join(BACKUPS_DIR, name);
     if (!fs.existsSync(src)) return res.status(404).json({ error: 'Backup not found' });
 
+    /** Auto-backup the current DB before replacing it. */
     if (fs.existsSync(DB_PATH)) {
       const ts = new Date().toISOString().replace(/[:.]/g, '-');
       fs.copyFileSync(DB_PATH, path.join(BACKUPS_DIR, `pre-restore-${ts}.db`));
@@ -88,6 +128,11 @@ router.post('/admin/restore', (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/reset
+ * Resets the database by deleting the current file and reinitialising it.
+ * An automatic backup is saved before the reset.
+ */
 router.post('/admin/reset', (_req, res) => {
   try {
     if (fs.existsSync(DB_PATH)) {
@@ -104,6 +149,10 @@ router.post('/admin/reset', (_req, res) => {
   }
 });
 
+/**
+ * DELETE /api/admin/backups/:name
+ * Deletes a specific backup file.
+ */
 router.delete('/admin/backups/:name', (req, res) => {
   try {
     const filePath = path.join(BACKUPS_DIR, req.params.name);

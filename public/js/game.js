@@ -1,3 +1,14 @@
+/**
+ * Main game UI logic.
+ *
+ * Handles loading/rendering scenes, the typewriter text effect, option
+ * selection, save/load progress (server-side for logged-in users,
+ * localStorage for guests), and the collapsible history sidebar.
+ *
+ * @module game
+ */
+
+/** DOM references. */
 const sceneHistory = document.getElementById('sceneHistory');
 const historySidebar = document.getElementById('historySidebar');
 const historyToggle = document.getElementById('historyToggle');
@@ -9,14 +20,25 @@ const userIndicator = document.getElementById('userIndicator');
 const depthCounter = document.getElementById('depthCounter');
 const btnReturnStart = document.getElementById('btnReturnStart');
 
+/** localStorage key for guest saves. */
 const SAVE_KEY = 'dungeon_save';
 const DEFAULTS = { fontSize: '16', textSpeed: 15 };
+
+/** The ID of the scene the player is currently viewing. */
 let lastSceneId = null;
+/** Timeout ID for the typewriter effect. */
 let typewriterQueue = null;
+/** Array of timeout IDs for staggered option reveals. */
 let optionsQueue = [];
+/** Current text speed in ms per character. */
 let currentSpeed = DEFAULTS.textSpeed;
+/** Content of the currently displayed scene (used for the history entry). */
 let currentSceneContent = '';
 
+/**
+ * Load display settings from the server (logged-in users) or localStorage (guests).
+ * @returns {Promise<{ fontSize: string, textSpeed: number }>}
+ */
 async function loadSettings() {
   if (Auth.isLoggedIn()) {
     try {
@@ -32,15 +54,24 @@ async function loadSettings() {
   };
 }
 
+/**
+ * Display an error message banner.
+ * @param {string} msg
+ */
 function showError(msg) {
   errorMessage.textContent = '> ERROR: ' + msg;
   errorMessage.classList.remove('hidden');
 }
 
+/** Hide the error banner. */
 function hideError() {
   errorMessage.classList.add('hidden');
 }
 
+/**
+ * Show or hide the "Generating next scene..." indicator.
+ * @param {boolean} loading
+ */
 function setLoading(loading) {
   if (loading) {
     loadingIndicator.classList.remove('hidden');
@@ -49,6 +80,12 @@ function setLoading(loading) {
   }
 }
 
+/**
+ * Create a history-scene DOM element for the sidebar.
+ * @param {{ content: string }} scene
+ * @param {string} [optionChosen] - The choice that led to this scene.
+ * @returns {HTMLElement}
+ */
 function createSceneElement(scene, optionChosen) {
   const div = document.createElement('div');
   div.className = 'history-scene';
@@ -59,15 +96,28 @@ function createSceneElement(scene, optionChosen) {
   return div;
 }
 
+/**
+ * Escape HTML special characters to prevent XSS.
+ * @param {string} text
+ * @returns {string}
+ */
 function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
+/**
+ * Animate text appearing character-by-character (typewriter effect).
+ * @param {HTMLElement} el - The container element.
+ * @param {string} text - Full text to display.
+ * @param {number} delay - Milliseconds per character (0 = instant).
+ * @param {Function} [callback] - Called when animation finishes.
+ */
 function typewriteText(el, text, delay, callback) {
   if (typewriterQueue) clearTimeout(typewriterQueue);
   const cursor = el.querySelector('.cursor-blink');
+  /** Remove existing text nodes, keep the cursor. */
   while (el.firstChild && el.firstChild !== cursor) {
     el.removeChild(el.firstChild);
   }
@@ -88,6 +138,12 @@ function typewriteText(el, text, delay, callback) {
   tick();
 }
 
+/**
+ * Render the current scene text (with typewriter) and options.
+ * @param {{ content: string, depth: number }} scene
+ * @param {number} speed - Text speed in ms/char.
+ * @param {Array} options
+ */
 function renderCurrentScene(scene, speed, options) {
   currentSceneContent = scene.content;
   currentScene.innerHTML = '';
@@ -108,6 +164,11 @@ function renderCurrentScene(scene, speed, options) {
   }
 }
 
+/**
+ * Render the clickable option buttons below the current scene.
+ * Options appear with a staggered delay based on the text speed setting.
+ * @param {Array<{ id: number, option_text: string, target_scene_id: number|null }>} options
+ */
 function renderOptions(options) {
   hideError();
   optionsQueue.forEach(clearTimeout);
@@ -131,14 +192,20 @@ function renderOptions(options) {
   });
 }
 
+/** Disable all option buttons (during generation). */
 function disableOptions() {
   optionsList.querySelectorAll('button').forEach(b => b.disabled = true);
 }
 
+/** Re-enable all option buttons after an error. */
 function enableOptions() {
   optionsList.querySelectorAll('button').forEach(b => b.disabled = false);
 }
 
+/**
+ * Persist the player's current scene position.
+ * Logged-in users save to the server; guests use localStorage.
+ */
 async function saveProgress() {
   if (Auth.isLoggedIn()) {
     try {
@@ -153,6 +220,9 @@ async function saveProgress() {
   }
 }
 
+/**
+ * Clear the player's saved progress.
+ */
 async function clearSave() {
   if (Auth.isLoggedIn()) {
     try {
@@ -163,6 +233,10 @@ async function clearSave() {
   }
 }
 
+/**
+ * Get the last saved scene ID for the current player (server or localStorage).
+ * @returns {Promise<number|null>}
+ */
 async function loadSavedSceneId() {
   if (Auth.isLoggedIn()) {
     try {
@@ -175,9 +249,16 @@ async function loadSavedSceneId() {
   return saved ? parseInt(saved, 10) : null;
 }
 
+/**
+ * Load a scene by ID (e.g. from a save), walk up the chain to build the
+ * history sidebar, and render the current scene.
+ * @param {number} sceneId
+ * @param {number} speed - Text speed for the typewriter.
+ */
 async function loadScene(sceneId, speed) {
   const data = await API.getScene(sceneId);
 
+  /** Walk up the parent chain to reconstruct the full history. */
   const chain = [data.scene];
   let current = data.scene;
   while (current && current.parent_id) {
@@ -200,6 +281,11 @@ async function loadScene(sceneId, speed) {
   await saveProgress();
 }
 
+/**
+ * Called when the player clicks an option button.
+ * Disables inputs, shows loading, calls the API, then renders the result.
+ * @param {{ id: number, option_text: string }} option
+ */
 async function chooseOption(option) {
   hideError();
   disableOptions();
@@ -209,6 +295,7 @@ async function chooseOption(option) {
     const data = await API.chooseOption(lastSceneId, option.id);
     setLoading(false);
 
+    /** Append the scene we're leaving to the history sidebar. */
     sceneHistory.appendChild(createSceneElement(
       { content: currentSceneContent },
       option.option_text
@@ -225,6 +312,11 @@ async function chooseOption(option) {
   }
 }
 
+/**
+ * Return to the dungeon entrance (root scene).
+ * Clears the save and resets the UI.
+ * @param {number} speed
+ */
 async function returnToStart(speed) {
   sceneHistory.replaceChildren();
   hideError();
@@ -237,6 +329,10 @@ async function returnToStart(speed) {
   sceneHistory.scrollTop = 0;
 }
 
+/**
+ * Initialise the game page: check auth, load settings, restore the last
+ * saved scene (if any), otherwise show the root scene.
+ */
 async function initGame() {
   await Auth.fetch();
   const user = Auth.getUser();
@@ -264,6 +360,7 @@ async function initGame() {
   await saveProgress();
 }
 
+/** Toggle the history sidebar open/closed. */
 historyToggle.addEventListener('click', () => {
   historySidebar.classList.toggle('collapsed');
   historyToggle.textContent = historySidebar.classList.contains('collapsed')
@@ -271,8 +368,10 @@ historyToggle.addEventListener('click', () => {
     : '\u00BB';
 });
 
+/** "Return to Start" button handler. */
 btnReturnStart.addEventListener('click', () => {
   returnToStart(currentSpeed);
 });
 
+/** Kick everything off. */
 initGame();

@@ -1,3 +1,24 @@
+/**
+ * LLM (Large Language Model) integration service.
+ *
+ * Wraps the OpenAI-compatible API to:
+ *   1. Generate the next scene + options based on adventure history.
+ *   2. Validate that the generated output meets quality guidelines.
+ *   3. Parse the LLM's raw JSON response into structured data.
+ *
+ * The main public export is `generateAndValidateScene`, which retries
+ * up to MAX_RETRIES times if generation or validation fails.
+ *
+ * Environment variables:
+ *   OPENAI_API_KEY    – API key (required)
+ *   OPENAI_BASE_URL   – Base URL for the API (defaults to OpenAI's v1)
+ *   LLM_MODEL         – Model name (defaults to 'gpt-4o-mini')
+ *   LLM_HTTP_REFERER  – Optional HTTP-Referer header
+ *   LLM_APP_TITLE     – Optional X-Title header
+ *
+ * @module services/llm
+ */
+
 const fs = require('fs');
 const path = require('path');
 const { OpenAI } = require('openai');
@@ -7,6 +28,11 @@ const MAX_RETRIES = 3;
 
 let _client = null;
 
+/**
+ * Lazily initialise and return a shared OpenAI client instance.
+ * Uses optional custom headers for providers that require them (e.g. OpenRouter).
+ * @returns {OpenAI}
+ */
 function getClient() {
   if (!_client) {
     const defaultHeaders = {};
@@ -26,10 +52,22 @@ function getClient() {
   return _client;
 }
 
+/**
+ * Load the content of a prompt template file from the `prompts/` directory.
+ * @param {string} filename - e.g. 'generation.txt'
+ * @returns {string} The prompt text as a UTF-8 string.
+ */
 function loadPrompt(filename) {
   return fs.readFileSync(path.join(__dirname, '..', 'prompts', filename), 'utf-8');
 }
 
+/**
+ * Call the LLM to generate a scene given the adventure history and the
+ * plan text for the most recent player choice.
+ * @param {Array<{ option?: string, content?: string }>} historySteps - Past scenes and choices.
+ * @param {string|null} chosenPlan - Plan text for the current choice.
+ * @returns {Promise<string>} The raw text returned by the LLM.
+ */
 async function generateScene(historySteps, chosenPlan) {
   const systemPrompt = loadPrompt('generation.txt');
   const formatPrompt = loadPrompt('format.txt');
@@ -64,6 +102,12 @@ async function generateScene(historySteps, chosenPlan) {
   return response.choices[0].message.content;
 }
 
+/**
+ * Call the LLM to validate a generated scene.
+ * The LLM is asked to respond with "YES" if the content follows all guidelines.
+ * @param {string} sceneContent - The full scene + options text.
+ * @returns {Promise<boolean>} Whether the scene passed validation.
+ */
 async function validateScene(sceneContent) {
   const systemPrompt = loadPrompt('validation.txt');
   const userContent = `Review the following generated scene and decide if it follows all guidelines.\n\n---\n${sceneContent}\n---\n\nRespond with ONLY the word "YES" or "NO".`;
@@ -80,6 +124,13 @@ async function validateScene(sceneContent) {
   return response.choices[0].message.content.trim().toUpperCase() === 'YES';
 }
 
+/**
+ * Parse the raw LLM response (expected to be JSON) into a structured object.
+ * Handles cases where the JSON is wrapped in markdown or extra text.
+ * @param {string} rawResponse - The raw text from the LLM.
+ * @returns {{ scene: string, options: Array<{ text: string, plan: string|null }> }}
+ * @throws If the response cannot be parsed or is missing required fields.
+ */
 function parseSceneResponse(rawResponse) {
   const cleaned = rawResponse.trim();
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
@@ -118,6 +169,13 @@ function parseSceneResponse(rawResponse) {
   };
 }
 
+/**
+ * Generate a scene, parse it, and validate it.  Retries up to MAX_RETRIES
+ * times if generation fails or validation does not pass.
+ * @param {Array} historySteps - Past scenes and choices.
+ * @param {string|null} chosenPlan - Plan for the current choice.
+ * @returns {Promise<{ scene: string, options: Array<{ text: string, plan: string|null }> }>}
+ */
 async function generateAndValidateScene(historySteps, chosenPlan) {
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {

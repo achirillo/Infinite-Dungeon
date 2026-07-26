@@ -8,12 +8,15 @@
 </head>
 <body>
   <script>window.API_BASE = 'https://infinite-dungeon-ujbn.onrender.com';</script>
+
+  <!-- Admin panel: database stats, actions, and backup management. -->
   <div class="admin-container">
     <div class="admin-header">
       <a href="./" class="btn small">&larr; Home</a>
       <h1>Database Admin</h1>
     </div>
 
+    <!-- Database statistics (populated by admin.js). -->
     <div class="admin-section">
       <h2>Stats</h2>
       <div class="stats-grid" id="statsGrid">
@@ -24,6 +27,7 @@
       </div>
     </div>
 
+    <!-- Action buttons: create backup, reset database. -->
     <div class="admin-section">
       <h2>Actions</h2>
       <div class="admin-actions">
@@ -32,6 +36,7 @@
       </div>
     </div>
 
+    <!-- Backup list (populated by admin.js). -->
     <div class="admin-section">
       <h2>Backups</h2>
       <div class="backup-list" id="backupList">
