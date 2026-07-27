@@ -14,6 +14,16 @@ const fs = require('fs');
 
 const db = require('./db/database');
 
+/** Clean the test database and any WAL sidecar files from a previous run. */
+function cleanTestDb() {
+  const dbPath = path.join(__dirname, 'data', 'dungeon.db');
+  const wal = dbPath + '-wal';
+  const shm = dbPath + '-shm';
+  if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
+  if (fs.existsSync(wal)) fs.unlinkSync(wal);
+  if (fs.existsSync(shm)) fs.unlinkSync(shm);
+}
+
 /** Entry point – sets up test environment and runs all assertions. */
 async function run() {
   /** Minimal API/Middleware test environment. */
@@ -21,8 +31,7 @@ async function run() {
   process.env.JWT_SECRET = 'test-secret';
 
   /** Start with a clean database. */
-  const dbPath = path.join(__dirname, 'data', 'dungeon.db');
-  if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
+  cleanTestDb();
 
   try {
     await db.initDatabase();

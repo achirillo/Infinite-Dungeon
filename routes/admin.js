@@ -73,8 +73,20 @@ router.get('/admin/stats', (_req, res) => {
 });
 
 /**
+ * Clean up stale WAL and SHM sidecar files left from a previous database
+ * connection so they cannot interfere with a freshly opened connection.
+ */
+function removeWalFiles() {
+  const wal = DB_PATH + '-wal';
+  const shm = DB_PATH + '-shm';
+  if (fs.existsSync(wal)) fs.unlinkSync(wal);
+  if (fs.existsSync(shm)) fs.unlinkSync(shm);
+}
+
+/**
  * POST /api/admin/backup
  * Creates a timestamped backup of the current database file.
+ * Forces a WAL checkpoint first so the backup is self-contained.
  */
 router.post('/admin/backup', (_req, res) => {
   try {
@@ -82,6 +94,8 @@ router.post('/admin/backup', (_req, res) => {
     if (!fs.existsSync(DB_PATH)) {
       return res.status(400).json({ error: 'No database to back up' });
     }
+    const db = require('../db/database');
+    db.checkpoint();
     const ts = new Date().toISOString().replace(/[:.]/g, '-');
     const backupName = `dungeon-${ts}.db`;
     fs.copyFileSync(DB_PATH, path.join(BACKUPS_DIR, backupName));
@@ -106,7 +120,8 @@ router.get('/admin/backups', (_req, res) => {
 /**
  * POST /api/admin/restore
  * Restore a specific backup. The current database is automatically backed up
- * before the restore takes place.
+ * before the restore takes place.  The live database connection is closed and
+ * re-opened so the restored data is immediately visible.
  */
 router.post('/admin/restore', (req, res) => {
   try {
@@ -117,11 +132,16 @@ router.post('/admin/restore', (req, res) => {
 
     /** Auto-backup the current DB before replacing it. */
     if (fs.existsSync(DB_PATH)) {
+      const db = require('../db/database');
+      db.checkpoint();
       const ts = new Date().toISOString().replace(/[:.]/g, '-');
       fs.copyFileSync(DB_PATH, path.join(BACKUPS_DIR, `pre-restore-${ts}.db`));
     }
 
+    removeWalFiles();
     fs.copyFileSync(src, DB_PATH);
+    const db = require('../db/database');
+    db.initDatabase();
     res.json({ message: `Restored from ${name}` });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -135,13 +155,15 @@ router.post('/admin/restore', (req, res) => {
  */
 router.post('/admin/reset', (_req, res) => {
   try {
+    const db = require('../db/database');
     if (fs.existsSync(DB_PATH)) {
       ensureBackupsDir();
+      db.checkpoint();
       const ts = new Date().toISOString().replace(/[:.]/g, '-');
       fs.copyFileSync(DB_PATH, path.join(BACKUPS_DIR, `auto-${ts}.db`));
+      removeWalFiles();
       fs.unlinkSync(DB_PATH);
     }
-    const db = require('../db/database');
     db.initDatabase();
     res.json({ message: 'Database reset. Auto-backup saved.' });
   } catch (err) {
