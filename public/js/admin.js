@@ -43,7 +43,7 @@ function showFeedback(msg, isError) {
  */
 async function loadStats() {
   try {
-    const data = await (await fetch('/api/admin/stats')).json();
+    const data = await (await fetch(API_BASE + '/api/admin/stats')).json();
     statsScenes.textContent = data.sceneCount;
     statsOptions.textContent = data.optionCount;
     statsDepth.textContent = data.maxDepth;
@@ -58,7 +58,7 @@ async function loadStats() {
  */
 async function loadBackups() {
   try {
-    const data = await (await fetch('/api/admin/backups')).json();
+    const data = await (await fetch(API_BASE + '/api/admin/backups')).json();
     if (data.length === 0) {
       backupList.innerHTML = '<span class="text-dim">No backups</span>';
       return;
@@ -83,7 +83,7 @@ async function loadBackups() {
  */
 async function createBackup() {
   try {
-    const res = await fetch('/api/admin/backup', { method: 'POST' });
+    const res = await fetch(API_BASE + '/api/admin/backup', { method: 'POST' });
     const data = await res.json();
     showFeedback(data.message || data.error, !res.ok);
     await refresh();
@@ -100,7 +100,7 @@ async function createBackup() {
 async function restoreBackup(name) {
   if (!confirm('Restore from ' + name + '? Current database will be auto-backed up.')) return;
   try {
-    const res = await fetch('/api/admin/restore', {
+    const res = await fetch(API_BASE + '/api/admin/restore', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -119,7 +119,7 @@ async function restoreBackup(name) {
 async function deleteBackup(name) {
   if (!confirm('Delete backup ' + name + '?')) return;
   try {
-    const res = await fetch('/api/admin/backups/' + encodeURIComponent(name), { method: 'DELETE' });
+    const res = await fetch(API_BASE + '/api/admin/backups/' + encodeURIComponent(name), { method: 'DELETE' });
     const data = await res.json();
     showFeedback(data.message || data.error, !res.ok);
     await loadBackups();
@@ -135,7 +135,7 @@ async function deleteBackup(name) {
 async function resetDatabase() {
   if (!confirm('Reset database? All scenes will be lost. An auto-backup will be saved.')) return;
   try {
-    const res = await fetch('/api/admin/reset', { method: 'POST' });
+    const res = await fetch(API_BASE + '/api/admin/reset', { method: 'POST' });
     const data = await res.json();
     showFeedback(data.message || data.error, !res.ok);
     await refresh();

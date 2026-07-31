@@ -20,7 +20,7 @@ const Auth = {
    */
   async fetch() {
     try {
-      const res = await fetch('/api/auth/me');
+      const res = await fetch(API_BASE + '/api/auth/me');
       const data = await res.json();
       this._state = data.user;
     } catch (_err) {
@@ -61,7 +61,7 @@ const Auth = {
    * @throws If login fails.
    */
   async login(email, password) {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(API_BASE + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -81,7 +81,7 @@ const Auth = {
    * @throws If registration fails.
    */
   async register(email, password, username) {
-    const res = await fetch('/api/auth/register', {
+    const res = await fetch(API_BASE + '/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, username }),
@@ -97,7 +97,7 @@ const Auth = {
    * @returns {Promise<void>}
    */
   async logout() {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch(API_BASE + '/api/auth/logout', { method: 'POST' });
     this._state = null;
   },
 };

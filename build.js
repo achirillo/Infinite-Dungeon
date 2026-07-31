@@ -28,10 +28,12 @@ const htmlFiles = fs.readdirSync(distDir).filter(f => f.endsWith('.html'));
 for (const file of htmlFiles) {
   const filePath = path.join(distDir, file);
   let content = fs.readFileSync(filePath, 'utf-8');
-  content = content.replace(
-    "window.API_BASE = ''",
-    `window.API_BASE = '${apiBase}'`
-  );
+  if (apiBase) {
+    content = content.replace(
+      /window\.API_BASE = '[^']*'/,
+      `window.API_BASE = '${apiBase}'`
+    );
+  }
   fs.writeFileSync(filePath, content);
   console.log(`  patched ${file}`);
 }
