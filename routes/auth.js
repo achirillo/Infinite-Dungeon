@@ -23,7 +23,10 @@ const router = express.Router();
 const COOKIE_OPTS = {
   httpOnly: true,
   maxAge: 7 * 24 * 60 * 60 * 1000,
-  sameSite: 'lax',
+  // In production the frontend (GitHub Pages) and backend (Render) are on
+  // different sites, so the cookie must be explicitly sent on cross-origin
+  // fetch requests (requires `sameSite: 'none'` + `secure` over HTTPS).
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
   secure: process.env.NODE_ENV === 'production',
 };
 
@@ -101,7 +104,7 @@ router.post('/auth/login', (req, res) => {
  * Clears the JWT cookie to log the user out.
  */
 router.post('/auth/logout', (_req, res) => {
-  res.clearCookie('token');
+  res.clearCookie('token', COOKIE_OPTS);
   res.json({ message: 'Logged out' });
 });
 

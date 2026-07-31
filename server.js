@@ -21,14 +21,39 @@ const authRoutes = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const IS_PROD = process.env.NODE_ENV === 'production';
 
-/** CORS headers – allow cross-origin requests so the front-end can talk to the API. */
-app.use((_req, res, next) => {
-  res.header('Access-Control-Allow-Origin', IS_PROD ? process.env.CORS_ORIGIN || '*' : '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Headers', 'Content-Type');
-  if (_req.method === 'OPTIONS') return res.sendStatus(204);
+/**
+ * Allowed cross-origin request origins (comma-separated). When set, only
+ * these exact origins may make credentialed requests. When unset, any origin
+ * is permitted, but the request's Origin header is always echoed back (never
+ * `*`) so credentialed cross-origin requests work correctly.
+ */
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+/**
+ * CORS middleware.
+ *
+ * With `Access-Control-Allow-Credentials: true` the browser rejects a
+ * wildcard `Access-Control-Allow-Origin: *`, so the allowed origin must be
+ * the exact, matching `Origin` request header. We echo the request origin
+ * back when it is permitted instead of sending a wildcard.
+ */
+app.use((req, res, next) => {
+  const origin = req.headers && req.headers.origin;
+  const originAllowed = ALLOWED_ORIGINS.length === 0 || ALLOWED_ORIGINS.includes(origin);
+
+  if (origin && originAllowed) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  }
+
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
 

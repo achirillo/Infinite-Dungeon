@@ -40,10 +40,10 @@ Analysis of the Infinite Dungeon codebase, captured from a full review. Each iss
 
 **Fix:** Eliminated by the `better-sqlite3` migration. Writes now go through native file storage with WAL mode enabled (`journal_mode = WAL`), allowing concurrent reads during writes.
 
-### 7. CORS `*` with `credentials: true` — ❌ OPEN
+### 7. CORS `*` with `credentials: true` — ✅ FIXED
 **Original:** In `server.js`, production with no `CORS_ORIGIN` set falls back to `'*'`, but browsers reject `Access-Control-Allow-Origin: *` when `Access-Control-Allow-Credentials: true`, blocking all credentialed cross-origin requests.
 
-**Suggested fix:** Require `CORS_ORIGIN` in production instead of falling back to `'*'`.
+**Fix:** The CORS middleware in `server.js` now echoes back the exact request `Origin` (never `*`) when it is permitted, alongside `Access-Control-Allow-Credentials: true`, `Access-Control-Allow-Headers`, `Access-Control-Allow-Methods`, and `Vary: Origin`. Origins can be constrained via the comma-separated `CORS_ORIGIN` env var (added to `render.yaml`); when unset, any origin is echoed. Additionally, the JWT cookie in `routes/auth.js` now uses `sameSite: 'none'` (with `secure`) in production so cookies are actually sent on cross-site fetch requests from GitHub Pages to Render, and logout clears the cookie with matching options.
 
 ---
 
