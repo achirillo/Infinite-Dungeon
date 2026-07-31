@@ -59,10 +59,10 @@ Analysis of the Infinite Dungeon codebase, captured from a full review. Each iss
 
 **Suggested fix:** Cache user data in the JWT payload, or skip the DB lookup for non-API requests.
 
-### 10. `getAncestorChain` does N individual queries — ❌ OPEN
+### 10. `getAncestorChain` does N individual queries — ✅ FIXED
 **Original:** `db/database.js` runs one `getScene()` query per ancestor. A depth-50 adventure triggers 50 SQL queries.
 
-**Suggested fix:** Use a single `WITH RECURSIVE` CTE.
+**Fix:** Replaced the loop with a single `WITH RECURSIVE` CTE in `getAncestorChain` that walks from the scene up to the root in one query, ordered by `depth` (root first). Verified against a 4-level chain and the full test suite.
 
 ### 11. LLM `temperature: 1` — ❌ OPEN
 **Original:** `services/llm.js` uses maximum randomness, which can produce incoherent output and require more validation retries.

@@ -118,13 +118,14 @@ function getOption(id) {
 }
 
 function getAncestorChain(sceneId) {
-  const chain = [];
-  let current = getScene(sceneId);
-  while (current) {
-    chain.unshift(current);
-    current = current.parent_id ? getScene(current.parent_id) : null;
-  }
-  return chain;
+  return getDb().prepare(`
+    WITH RECURSIVE ancestors AS (
+      SELECT * FROM scenes WHERE id = ?
+      UNION ALL
+      SELECT s.* FROM scenes s JOIN ancestors a ON s.id = a.parent_id
+    )
+    SELECT * FROM ancestors ORDER BY depth ASC
+  `).all(sceneId);
 }
 
 function insertScene(parentId, optionChosen, content, depth) {
